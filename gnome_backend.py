@@ -40,8 +40,6 @@ class GnomeReminder:
         self.subscription = connection.signal_subscribe(
             "org.freedesktop.DBus", "org.freedesktop.DBus", "NameOwnerChanged",
             "/org/freedesktop/DBus", None, Gio.DBusSignalFlags.NONE, self.owner_changed)
-        self.persist()
-        self.schedule()
 
     def state(self):
         verse = self.verses[self.progress.number - 1]
@@ -142,14 +140,18 @@ class GnomeReminder:
 
 def run(app, test_callback=None):
     connection = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+    loop = GLib.MainLoop()
+    # Export the object before advertising its name. GNOME attaches immediately
+    # when the name appears, including after a service upgrade/restart.
+    reminder = GnomeReminder(app, connection, loop)
     reply = connection.call_sync(
         "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus",
         "RequestName", GLib.Variant("(su)", (BUS_NAME, 4)),
         GLib.VariantType.new("(u)"), Gio.DBusCallFlags.NONE, -1, None)
     if reply.unpack()[0] != 1:
         raise RuntimeError("Another GNOME Quran reminder is already running")
-    loop = GLib.MainLoop()
-    reminder = GnomeReminder(app, connection, loop)
+    reminder.persist()
+    reminder.schedule()
     handlers = []
     for sig, action in ((signal.SIGUSR1, reminder.show), (signal.SIGUSR2, reminder.hide),
                         (signal.SIGTERM, reminder.shutdown), (signal.SIGINT, reminder.shutdown)):
