@@ -1,4 +1,7 @@
-Quran desktop reminder — installed for the local niri / Wayland session.
+Quran desktop reminder — Linux edition.
+
+For current installation, supported desktops and usage, read README.md or
+README.ar.md. The notes below describe the original niri installation.
 
 Data source: https://alquran.cloud/api
 Arabic text: https://api.alquran.cloud/v1/quran/quran-uthmani

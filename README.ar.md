@@ -12,7 +12,7 @@
 
 ```sh
 sudo apt update
-sudo apt install git python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-noto-core
+sudo apt install git python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 librsvg2-common fonts-noto-core
 git clone https://github.com/Elgedawy31/quran-reminder.git
 cd quran-reminder
 ./install.sh
@@ -28,6 +28,40 @@ gnome-extensions enable jisr-quran@elgedawy31.github.io
 يمكنك تفعيل **Jisr Quran Reminder** من تطبيق Extensions أيضًا.
 المثبت يحاول تفعيلها مباشرة؛ GNOME على Wayland قد يحتاج تسجيل دخول جديد حتى
 يتعرّف على الإضافة. بدون تفعيل الإضافة، الخدمة تعمل ولكن الكارت لا يظهر.
+
+## باقي توزيعات لينكس
+
+بعد تثبيت `git` بمدير حزم توزيعتك:
+
+```sh
+git clone https://github.com/Elgedawy31/quran-reminder.git
+cd quran-reminder
+./scripts/install-deps.sh
+./install.sh
+```
+
+سكربت المكتبات يدعم Ubuntu/Debian وFedora وArch ومشتقاتها. على Arch ينفذ
+تحديثًا كاملًا للنظام لتجنب التحديث الجزئي. يحتاج البرنامج جلسة سطح مكتب مع
+systemd وD-Bus؛ الأنظمة المختلفة مثل NixOS تحتاج إعدادًا مخصصًا.
+
+البرنامج يختار طريقة العرض تلقائيًا: إضافة GNOME، أو Layer Shell على niri وSway
+وHyprland وKDE Wayland، أو نافذة GTK عادية على X11. يمكن اختيار نافذة عادية
+يدويًا بأمر `./install.sh --backend window`؛ على Wayland تموضعها وبقاؤها فوق
+النوافذ يتوقفان على مدير النوافذ.
+
+يمكن التنزيل بدون Git من [صفحة الإصدارات](https://github.com/Elgedawy31/quran-reminder/releases/latest):
+
+```sh
+sha256sum --ignore-missing -c SHA256SUMS
+tar -xzf quran-reminder-0.1.0.tar.gz
+cd quran-reminder-0.1.0
+./scripts/install-deps.sh
+./install.sh
+```
+
+نزّل الأرشيف وملف `SHA256SUMS` أولًا. على GNOME طبّق خطوة تفعيل الإضافة أيضًا.
+تم اختبار Ubuntu 24.04 مع GNOME 46 وWayland فعليًا داخل بيئة معزولة، وكذلك
+واجهة GTK على X11. وصفات Fedora وArch متاحة ولم تختبر هنا على سطح مكتب كامل.
 
 ## الاستخدام
 

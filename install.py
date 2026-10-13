@@ -37,12 +37,18 @@ def systemctl(*args, check=True):
                           stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
 
 
+def systemd_quote(path):
+    return '"' + str(path).replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%").replace("$", "$$") + '"'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["auto", "gnome", "layer-shell", "window"], default=None)
     parser.add_argument("--no-start", action="store_true", help="Install files without contacting the desktop/session")
     parser.add_argument("--uninstall", action="store_true", help="Remove application files; retain reading progress and config")
     args = parser.parse_args()
+    if os.geteuid() == 0 and not args.no_start:
+        raise SystemExit("Run install.sh as your normal desktop user, without sudo. Only install-deps.sh needs root privileges.")
     if args.uninstall:
         if not args.no_start:
             systemctl("stop", "jisr-quran.service", check=False)
@@ -103,7 +109,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart={exec_quote(BIN)} --run
+ExecStart={systemd_quote(BIN)} --run
 Restart=on-failure
 RestartSec=10
 TimeoutStopSec=5
@@ -137,8 +143,11 @@ Categories=Utility;
             if result.returncode:
                 print("GNOME needs a logout/login to discover the extension. Afterwards run:")
                 print(f"  gnome-extensions enable {UUID}")
-        # --restore respects an existing deliberate --stop preference.
-        subprocess.run([str(BIN), "--restore"], check=True)
+        # Apply an upgrade immediately; keep a deliberate --stop preference.
+        if config.get("enabled", True) and systemctl("is-active", "--quiet", "jisr-quran.service", check=False).returncode == 0:
+            systemctl("restart", "jisr-quran.service")
+        else:
+            subprocess.run([str(BIN), "--restore"], check=True)
     print(f"Installed: {BIN}")
     print("Controls: ~/.local/bin/jisr-quran --show | --hide | --stop | --start | --status")
     if is_gnome:

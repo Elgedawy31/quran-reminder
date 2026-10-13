@@ -144,7 +144,7 @@ export default class QuranReminder extends Extension {
         this._position();
         const wasVisible = this._card.visible;
         if (!wasVisible) {
-            const adjustment = this._scroll.vscroll?.adjustment ?? this._scroll.vadjustment;
+            const adjustment = this._scroll.vadjustment ?? this._scroll.vscroll?.adjustment;
             adjustment?.set_value(0);
             this._card.opacity = 0;
         }

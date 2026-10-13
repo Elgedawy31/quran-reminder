@@ -37,6 +37,9 @@ def write_json(path, value):
 def control(mode):
     if mode == "--status":
         value = json.loads(STATUS.read_text()) if STATUS.exists() else {"running": False}
+        if subprocess.run(["systemctl", "--user", "is-active", "--quiet", SERVICE],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
+            value.update({"running": False, "visible": False})
         progress = ReadingProgress.from_record(json.loads(STATE.read_text()) if STATE.exists() else {})
         value.update({"read_count": progress.read_count, "tafsir_count": progress.tafsir_count, "percent_read": progress.percent_read, "number": progress.number})
         print(json.dumps(value, ensure_ascii=False, indent=2))
@@ -74,12 +77,20 @@ def run(test_callback=None):
     import gi
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")
-    gi.require_version("GtkLayerShell", "0.1")
-    from gi.repository import Gdk, GLib, Gtk, GtkLayerShell, Pango
+    from gi.repository import Gdk, GLib, Gtk, Pango
     from ui import IconButton, IslamicDivider
     Gtk.init([])
-    if not GtkLayerShell.is_supported():
-        raise RuntimeError("A Wayland compositor supporting Layer Shell is required")
+    is_x11 = Gdk.Display.get_default().__class__.__name__ == "X11Display"
+    use_layer_shell = backend != "window" and not (backend == "auto" and is_x11)
+    GtkLayerShell = None
+    if use_layer_shell:
+        try:
+            gi.require_version("GtkLayerShell", "0.1")
+            from gi.repository import GtkLayerShell
+        except (ImportError, ValueError) as error:
+            raise RuntimeError("Install GTK Layer Shell for this Wayland desktop, or select backend=window. GNOME uses backend=gnome.") from error
+        if not GtkLayerShell.is_supported():
+            raise RuntimeError("This desktop does not support Layer Shell. On GNOME use backend=gnome and enable the extension; other desktops can use backend=window.")
     data = json.loads((ROOT / "verses.json").read_text())
     verses = data["verses"]
     if len(verses) != 6236:
@@ -131,12 +142,19 @@ def run(test_callback=None):
             self.window.set_accept_focus(False)
             self.window.set_app_paintable(True)
             self.window.set_visual(self.window.get_screen().get_rgba_visual())
-            GtkLayerShell.init_for_window(self.window)
-            GtkLayerShell.set_namespace(self.window, "jisr-quran-reminder")
-            GtkLayerShell.set_layer(self.window, GtkLayerShell.Layer.OVERLAY)
-            GtkLayerShell.set_keyboard_mode(self.window, GtkLayerShell.KeyboardMode.NONE)
-            # No anchors: the compositor centers this layer on both axes.
-            GtkLayerShell.set_exclusive_zone(self.window, 0)
+            if use_layer_shell:
+                GtkLayerShell.init_for_window(self.window)
+                GtkLayerShell.set_namespace(self.window, "jisr-quran-reminder")
+                GtkLayerShell.set_layer(self.window, GtkLayerShell.Layer.OVERLAY)
+                GtkLayerShell.set_keyboard_mode(self.window, GtkLayerShell.KeyboardMode.NONE)
+                # No anchors: the compositor centers this layer on both axes.
+                GtkLayerShell.set_exclusive_zone(self.window, 0)
+            else:
+                self.window.set_keep_above(True)
+                self.window.set_skip_taskbar_hint(True)
+                self.window.set_skip_pager_hint(True)
+                self.window.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+                self.window.set_focus_on_map(False)
             monitor = Gdk.Display.get_default().get_monitor(0)
             geometry = monitor.get_geometry()
             self.popup_width = min(1040, geometry.width - 80)
@@ -205,7 +223,7 @@ def run(test_callback=None):
             return label
 
         def status(self):
-            write_json(STATUS, {"running": True, "visible": self.visible, "number": self.progress.number, "interval_seconds": load_config()["interval_seconds"], "next_due_unix": self.next_due, "edition": "quran-uthmani", "tafsir_visible": False, "offline": True, "width": self.window.get_allocated_width(), "height": self.window.get_allocated_height(), "opacity": Gtk.Widget.get_opacity(self.window), "complete_text": self.arabic.get_text() == verses[self.progress.number - 1]["arabic"], "ayah_read": self.progress.ayah_read, "read_count": self.progress.read_count, "tafsir_count": self.progress.tafsir_count, "percent_read": self.progress.percent_read, "centered": True})
+            write_json(STATUS, {"running": True, "visible": self.visible, "backend": "layer-shell" if use_layer_shell else "window", "number": self.progress.number, "interval_seconds": load_config()["interval_seconds"], "next_due_unix": self.next_due, "edition": "quran-uthmani", "tafsir_visible": False, "offline": True, "width": self.window.get_allocated_width(), "height": self.window.get_allocated_height(), "opacity": Gtk.Widget.get_opacity(self.window), "complete_text": self.arabic.get_text() == verses[self.progress.number - 1]["arabic"], "ayah_read": self.progress.ayah_read, "read_count": self.progress.read_count, "tafsir_count": self.progress.tafsir_count, "percent_read": self.progress.percent_read, "centered": use_layer_shell or is_x11})
 
         def persist(self):
             write_json(STATE, self.progress.to_record())
