@@ -1,0 +1,50 @@
+Quran desktop reminder — installed for the local niri / Wayland session.
+
+Data source: https://alquran.cloud/api
+Arabic text: https://api.alquran.cloud/v1/quran/quran-uthmani
+Al-Muyassar tafsir: https://api.alquran.cloud/v1/quran/ar.muyassar
+Both complete editions are joined by global ayah number and checked against
+surah number and ayah number within the surah. All 6236 ayahs are cached.
+The text is displayed verbatim. No generated tafsir or paraphrasing.
+
+Behaviour:
+- A popup appears on login and every 300 seconds.
+- It stays until Read or Hide is clicked. The timer never replaces a visible verse.
+- Reading starts at Al-Fatiha 1:1 and continues in Quran order.
+- Tafsir and its confirmation are hidden; the popup shows only the verse.
+- Exactly two icon-only buttons: a check circle for Read and a crossed eye for Hide.
+- Read saves completion and smoothly closes the popup; the next verse appears
+  after a full 300 seconds. There is no Next button or immediate navigation.
+- Hide closes without marking the verse; the same verse returns after 300 seconds.
+- Tooltips and accessibility names identify each icon's action.
+- Existing reading progress and historical tafsir confirmations are preserved.
+- Hiding an incomplete verse preserves the verse and existing confirmations.
+- Hiding a completed verse allows the following reminder to advance once.
+- Progress is saved across restarts and counts actual confirmations.
+- Green buttons have cream icons, a pointer cursor, and animated hover fill.
+- The cream page has a small Islamic geometric divider without nested frames.
+- Text remains complete and scrolls when needed.
+- The popup does not take keyboard focus.
+- It uses downloaded local data and works offline.
+
+Application launcher:
+Quran Reminder / آية من القرآن: show the current verse and enable reminders.
+Quran Reminder Stop / إيقاف تذكير القرآن: stop reminders, including on login.
+
+Commands:
+  ~/.local/bin/jisr-quran --show
+  ~/.local/bin/jisr-quran --hide
+  ~/.local/bin/jisr-quran --stop
+  ~/.local/bin/jisr-quran --start
+  ~/.local/bin/jisr-quran --status
+
+Interval: ~/.config/jisr-quran/config.json, interval_seconds (default 300).
+Installed source and cache: ~/.local/share/jisr-quran/
+Source copies and complete data are also saved beside this file.
+
+Refresh the downloaded data explicitly:
+  python download_data.py ~/.local/share/jisr-quran/verses.json
+
+GTK Layer Shell 0.10.1 is unpacked locally from the official Arch package,
+verified against the SHA256 checksum in the local pacman repository database.
+System packages are unchanged.
