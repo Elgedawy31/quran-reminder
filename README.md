@@ -14,7 +14,8 @@ window. It can display the card above applications without grabbing keyboard
 focus. The Python service handles the timer and saved progress over the user's
 session D-Bus. No external service or network access is needed at runtime.
 
-GNOME Shell **45–50** is targeted (including Ubuntu 24.04's GNOME 46).
+GNOME Shell **45–50** is targeted. The overlay has been tested on Ubuntu 24.04
+with GNOME 46 and Ubuntu 26.04 with GNOME 50, using real headless Wayland compositors.
 GNOME 42–44, including Ubuntu 22.04's default desktop, is not supported by this
 extension. Use a newer GNOME release, or the X11 backend on a compatible session.
 
@@ -197,8 +198,9 @@ that test only in a disposable CI/container environment:
 JISR_RUN_GNOME_SMOKE=1 dbus-run-session -- python3 tests/gnome_smoke.py
 ```
 
-Validated locally on Ubuntu 24.04 with GNOME Shell 46.0 / Mutter 46.2, plus GTK3
-under Xvfb. Fedora and Arch dependency recipes are provided; they have not been
+Validated locally on Ubuntu 24.04 with GNOME Shell 46.0 / Mutter 46.2 and Ubuntu
+26.04 with GNOME Shell / Mutter 50.1, plus GTK3 under Xvfb. Fedora and Arch
+dependency recipes are provided; they have not been
 tested here on full desktop installations. Build distribution archives with
 `python3 scripts/package.py 0.1.0`.
 
