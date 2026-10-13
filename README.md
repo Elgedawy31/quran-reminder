@@ -20,7 +20,7 @@ extension. Use a newer GNOME release, or the X11 backend on a compatible session
 
 ```sh
 sudo apt update
-sudo apt install git python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 fonts-noto-core
+sudo apt install git python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 librsvg2-common fonts-noto-core
 git clone https://github.com/Elgedawy31/quran-reminder.git
 cd quran-reminder
 ./install.sh
@@ -38,6 +38,61 @@ to enable it immediately, but GNOME on Wayland may need a new login to discover
 new extensions. The backend alone does not display a card until the extension is
 enabled. Extension versions 45–50 are compatibility targets, not a claim that
 every distribution and shell version has been tested.
+
+## Other Linux desktops and distributions
+
+| Desktop/session | Automatic backend | Notes |
+| --- | --- | --- |
+| GNOME 45–50, Wayland or X11 | GNOME Shell extension | Enable the local extension after installation |
+| niri, Sway, Hyprland, KDE Plasma on Wayland | GTK Layer Shell | Compositor must support `zwlr_layer_shell_v1` |
+| Xfce, Cinnamon, MATE, KDE on X11 | GTK window | Requests centering, keep-above and no keyboard focus |
+| Other Wayland desktops | Manual `window` backend | Window positioning/keep-above depend on the compositor |
+
+**Requirements:** Python 3.10+, a graphical Linux desktop, systemd user services,
+session D-Bus and PyGObject. GTK frontends also need GTK3, PyCairo, SVG support and
+Arabic fonts. Minimal installations without systemd, or distributions such as
+NixOS with special packaging, need their own integration.
+
+On Ubuntu/Debian, Fedora or Arch and derivatives, install the system packages with:
+
+```sh
+git clone https://github.com/Elgedawy31/quran-reminder.git
+cd quran-reminder
+./scripts/install-deps.sh
+./install.sh
+```
+
+`git` is needed for cloning; install it using your distribution's package manager
+first if necessary. `install-deps.sh` uses apt, dnf or pacman and may ask for sudo.
+On Arch, it performs a full system upgrade to avoid partial upgrades. The
+application itself installs per user and never needs root.
+
+Backend selection is automatic. An explicit override is available:
+
+```sh
+./install.sh --backend gnome
+./install.sh --backend layer-shell
+./install.sh --backend window
+```
+
+The ordinary-window backend also runs on Wayland, but only the GNOME extension
+and Layer Shell frontends provide compositor-level overlay behavior.
+
+### Download without Git
+
+Download `quran-reminder-0.1.0.tar.gz` and `SHA256SUMS` from
+[Releases](https://github.com/Elgedawy31/quran-reminder/releases/latest), then:
+
+```sh
+sha256sum --ignore-missing -c SHA256SUMS
+tar -xzf quran-reminder-0.1.0.tar.gz
+cd quran-reminder-0.1.0
+./scripts/install-deps.sh
+./install.sh
+```
+
+GNOME users still need the extension activation step above. The separate
+extension ZIP requires the Python backend from the main package.
 
 ## Behavior
 
@@ -114,6 +169,11 @@ protocol; GNOME needs the extension backend.
 
 ## Development
 
+Branches: `feat/ubuntu-gnome-wayland` introduces the GNOME frontend;
+`feat/linux-portability` adds the cross-distribution installer, X11 frontend,
+archives and CI. `main` combines the supported features. `legacy/niri` preserves
+the original local niri version.
+
 ```sh
 python3 -m unittest -v test_progress
 dbus-run-session -- python3 -m unittest -v test_gnome_backend
@@ -121,6 +181,26 @@ dbus-run-session -- python3 -m unittest -v test_gnome_backend
 
 The D-Bus tests use temporary XDG directories and a separate session bus. The
 original `test_popup.py` needs a running compositor with Layer Shell support.
+
+Additional checks:
+
+```sh
+python3 -m unittest -v test_install
+xvfb-run -a python3 -m unittest -v test_window
+```
+
+CI also starts a real headless GNOME 46 Wayland compositor and tests the extension,
+its two buttons, full text, centering and reconnection after disable/enable. Run
+that test only in a disposable CI/container environment:
+
+```sh
+JISR_RUN_GNOME_SMOKE=1 dbus-run-session -- python3 tests/gnome_smoke.py
+```
+
+Validated locally on Ubuntu 24.04 with GNOME Shell 46.0 / Mutter 46.2, plus GTK3
+under Xvfb. Fedora and Arch dependency recipes are provided; they have not been
+tested here on full desktop installations. Build distribution archives with
+`python3 scripts/package.py 0.1.0`.
 
 ## Data and license
 

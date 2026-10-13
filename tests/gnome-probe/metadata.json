@@ -1,0 +1,6 @@
+{
+  "uuid": "jisr-test-probe@localhost",
+  "name": "Jisr isolated test probe",
+  "description": "Test fixture, never installed by install.sh",
+  "shell-version": ["45", "46", "47", "48", "49", "50"]
+}
