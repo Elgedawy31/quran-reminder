@@ -10,17 +10,22 @@ import time
 from progress import ReadingProgress, TOTAL_AYAHS
 
 HOME = Path.home()
-ROOT = HOME / ".local/share/jisr-quran"
-CONFIG = HOME / ".config/jisr-quran/config.json"
-STATE = HOME / ".local/state/jisr-quran/state.json"
+DATA_HOME = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share"))
+ROOT = Path(os.environ.get("JISR_QURAN_DATA_DIR", DATA_HOME / "jisr-quran"))
+if not (ROOT / "verses.json").exists():
+    ROOT = Path(__file__).resolve().parent / "data"
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "jisr-quran/config.json"
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "jisr-quran/state.json"
 STATUS = STATE.with_name("status.json")
 SERVICE = "jisr-quran.service"
 
 def load_config():
-    value = {"interval_seconds": 300, "enabled": True}
+    value = {"interval_seconds": 300, "enabled": True, "backend": "auto"}
     if CONFIG.exists():
         value.update(json.loads(CONFIG.read_text()))
     value["interval_seconds"] = max(10, int(value["interval_seconds"]))
+    if value["backend"] not in ("auto", "gnome", "layer-shell", "window"):
+        raise ValueError("backend must be auto, gnome, layer-shell or window")
     return value
 
 def write_json(path, value):
@@ -52,7 +57,7 @@ def control(mode):
     config = load_config()
     config["enabled"] = True
     write_json(CONFIG, config)
-    names = [key for key in ("WAYLAND_DISPLAY", "NIRI_SOCKET", "XDG_RUNTIME_DIR") if key in os.environ]
+    names = [key for key in ("WAYLAND_DISPLAY", "DISPLAY", "XAUTHORITY", "NIRI_SOCKET", "XDG_RUNTIME_DIR", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE") if key in os.environ]
     if names:
         subprocess.run(["systemctl", "--user", "import-environment", *names], check=True)
     active = subprocess.run(["systemctl", "--user", "is-active", "--quiet", SERVICE]).returncode == 0
@@ -61,6 +66,11 @@ def control(mode):
         subprocess.run(["systemctl", "--user", "kill", "--signal=SIGUSR1", "--kill-whom=main", SERVICE], check=True)
 
 def run(test_callback=None):
+    backend = load_config()["backend"]
+    desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower().split(":")
+    if backend == "gnome" or (backend == "auto" and "gnome" in desktop):
+        from gnome_backend import run as run_gnome
+        return run_gnome(sys.modules[__name__], test_callback)
     import gi
     gi.require_version("Gtk", "3.0")
     gi.require_version("Gdk", "3.0")

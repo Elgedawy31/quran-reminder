@@ -1,0 +1,21 @@
+.jisr-quran-card {
+    background-color: #fff2d8;
+    color: #0a4f3e;
+    border-radius: 22px;
+    padding: 32px;
+    spacing: 18px;
+    font-family: "Noto Sans Arabic";
+}
+.jisr-quran-reference { font-size: 17px; font-weight: bold; text-align: right; }
+.jisr-quran-progress { font-size: 15px; text-align: right; }
+.jisr-quran-verse { font-family: "Noto Naskh Arabic"; font-size: 34px; text-align: center; }
+.jisr-quran-scroll { padding: 8px 0; }
+.jisr-quran-footer { spacing: 12px; }
+.jisr-quran-button {
+    background-color: #0f6e56;
+    color: #fff2d8;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 15px;
+}
+.jisr-quran-button:hover { background-color: #0a4f3e; }
